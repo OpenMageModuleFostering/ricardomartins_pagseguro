@@ -5,11 +5,12 @@
  *
  * @author    Ricardo Martins <ricardo@ricardomartins.net.br>
  */
-class RicardoMartins_PagSeguro_Model_Source_Customer_Attributes
+class RicardoMartins_PagSeguro_Model_Source_Customer_Cpf
 {
     public function toOptionArray() {
         $fields = Mage::helper('ricardomartins_pagseguro/internal')->getFields('customer');
         $options = array();
+        $options[] = array('value'=>'','label'=>'Solicitar junto com os outros dados do pagamento');
 
         foreach($fields as $key => $value) {
             if(!is_null($value['frontend_label'])) {

@@ -27,23 +27,13 @@ class RicardoMartins_PagSeguro_Model_Abstract extends Mage_Payment_Model_Method_
                 }
                 if($order->canCancel())
                 {
-                    $payment->registerRefundNotification(floatval($resultXML->grossAmount));
                     $order->cancel();
                     $order->save();
                 }else{
+                    $payment->registerRefundNotification(floatval($resultXML->grossAmount));
                     $order->addStatusHistoryComment('Devolvido: o valor foi devolvido ao comprador, mas o pedido encontra-se em um estado que não pode ser cancelado.')
                         ->save();
                 }
-            }
-
-            if($processedState->getStateChanged())
-            {
-                $order->setState($processedState->getState(),true,$processedState->getIsCustomerNotified())->save();
-            }
-
-            if((int)$resultXML->status == 3) //Quando o pedido foi dado como Pago
-            {
-                $payment->registerCaptureNotification(floatval($resultXML->grossAmount));
             }
 
             if((int)$resultXML->status == 7 && isset($resultXML->cancellationSource)) //Especificamos a fonte do cancelamento do pedido
@@ -57,6 +47,28 @@ class RicardoMartins_PagSeguro_Model_Abstract extends Mage_Payment_Model_Method_
                         $message .= ' A transação foi negada ou cancelada pela instituição bancária.';
                         break;
                 }
+                $order->cancel();
+            }
+
+            if($processedState->getStateChanged())
+            {
+                $order->setState($processedState->getState(),true,$processedState->getIsCustomerNotified())->save();
+            }
+
+            if((int)$resultXML->status == 3) //Quando o pedido foi dado como Pago
+            {
+                //cria fatura e envia email (se configurado)
+//                $payment->registerCaptureNotification(floatval($resultXML->grossAmount));
+                $invoice = $order->prepareInvoice();
+                $invoice->register()->pay();
+                $msg = sprintf('Pagamento capturado. Identificador da Transação: %s', (string)$resultXML->code);
+                $invoice->addComment($msg);
+                $invoice->sendEmail(Mage::getStoreConfigFlag('payment/pagseguro/send_invoice_email'),'Pagamento recebido com sucesso.');
+                Mage::getModel('core/resource_transaction')
+                    ->addObject($invoice)
+                    ->addObject($invoice->getOrder())
+                    ->save();
+                $order->addStatusHistoryComment(sprintf('Fatura #%s criada com sucesso.', $invoice->getIncrementId()));
             }
 
             $order->addStatusHistoryComment($message);
@@ -161,9 +173,10 @@ class RicardoMartins_PagSeguro_Model_Abstract extends Mage_Payment_Model_Method_
     public function callApi($params, $payment)
     {
         $helper = Mage::helper('ricardomartins_pagseguro');
+        $params = $this->_convertEnconding($params);
         $client = new Zend_Http_Client($helper->getWsUrl('transactions'));
         $client->setMethod(Zend_Http_Client::POST);
-        $client->setConfig(array('timeout'=>30));
+        $client->setConfig(array('timeout'=>45));
 
         $client->setParameterPost($params); //parametros enviados via POST
 
@@ -195,5 +208,20 @@ class RicardoMartins_PagSeguro_Model_Abstract extends Mage_Payment_Model_Method_
 
 
         return $xml;
+    }
+
+    /**
+     * Converte os valores enviados à api para ISO-8859-1
+     * @param array $params
+     *
+     * @return array
+     */
+    protected function _convertEnconding(array $params)
+    {
+        foreach($params as $k => $v)
+        {
+            $params[$k] = utf8_decode($v);
+        }
+        return $params;
     }
 }
