@@ -14,27 +14,6 @@ class RicardoMartins_PagSeguro_Model_Payment_Cc extends RicardoMartins_PagSeguro
     protected $_canUseForMultishipping = true;
     protected $_canSaveCc = false;
 
-    public function isAvailable($quote = null)
-    {
-        $is_available = parent::isAvailable ($quote);
-        if (empty($quote)){
-            return $is_available;
-        }
-        if (Mage::getStoreConfigFlag("payment/pagseguro_cc/group_restriction")
-            == false) {
-            return true;
-        }
-
-        $current_group_id = $quote->getCustomerGroupId ();
-        $customer_groups = explode (',', $this->_getStoreConfig('customer_groups'));
-
-        if($is_available && in_array($current_group_id, $customer_groups)){
-            return true;
-        }
-
-        return false;
-    }
-
     public function assignData($data)
     {
         if(!($data instanceof Varien_Object)){
@@ -47,11 +26,6 @@ class RicardoMartins_PagSeguro_Model_Payment_Cc extends RicardoMartins_PagSeguro
             ->setAdditionalInformation('credit_card_owner', $data->getPsCcOwner())
             ->setCcType($data->getPsCardType())
             ->setCcLast4(substr($data->getPsCcNumber(), -4));
-
-        //cpf
-        if(Mage::helper('ricardomartins_pagseguro')->isCpfVisible()) {
-            $info->setAdditionalInformation($this->getCode() . '_cpf', $data->getData($this->getCode() . '_cpf'));
-        }
 
         //data de nascimento
         $owner_dob_attribute = Mage::getStoreConfig('payment/pagseguro_cc/owner_dob_attribute');
@@ -84,7 +58,7 @@ class RicardoMartins_PagSeguro_Model_Payment_Cc extends RicardoMartins_PagSeguro
 
         if(empty($credit_card_token) || empty($sender_hash))
         {
-            Mage::helper('ricardomartins_pagseguro')->writeLog('Falha ao obter o token do cartao ou sender_hash. Veja se os dados "sender_hash" e "credit_card_token" foram enviados no formulário. Um problema de JavaScript pode ter ocorrido. Se esta for apenas uma atualização de blocos via ajax nao se preocupe.');
+            Mage::helper('ricardomartins_pagseguro')->writeLog('Falha ao obter o token do cartao ou sender_hash. Veja se os dados "sender_hash" e "credit_card_token" foram enviados no formulário. Um problema de JavaScript pode ter ocorrido.');
             Mage::throwException('Falha ao processar pagamento junto ao PagSeguro. Por favor, entre em contato com nossa equipe.');
         }
         return $this;
@@ -122,11 +96,6 @@ class RicardoMartins_PagSeguro_Model_Payment_Cc extends RicardoMartins_PagSeguro
             $payment->setAdditionalInformation($additional);
         }
         return $this;
-    }
-
-    public function _getStoreConfig($field)
-    {
-        return Mage::getStoreConfig("payment/pagseguro_cc/{$field}");
     }
 
 }

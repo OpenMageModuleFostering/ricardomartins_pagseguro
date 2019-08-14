@@ -103,25 +103,15 @@
                             <show_in_store>0</show_in_store>
                             <comment>Veja a saída de log em var/log/pagseguro.log</comment>
                         </debug>
-                        <send_invoice_email>
-                            <label>Enviar e-mail de fatura?</label>
-                            <frontend_type>select</frontend_type>
-                            <source_model>adminhtml/system_config_source_yesno</source_model>
-                            <sort_order>31</sort_order>
-                            <show_in_default>1</show_in_default>
-                            <show_in_website>1</show_in_website>
-                            <show_in_store>1</show_in_store>
-                            <comment><![CDATA[Dispara o e-mail de fatura da loja ao receber a confirmação de pagamento do PagSeguro.]]></comment>
-                        </send_invoice_email>
                         <customer_cpf_attribute>
                             <label>CPF do cliente</label>
                             <frontend_type>select</frontend_type>
-                            <source_model>ricardomartins_pagseguro/source_customer_cpf</source_model>
-                            <sort_order>32</sort_order>
+                            <source_model>ricardomartins_pagseguro/source_customer_attributes</source_model>
+                            <sort_order>31</sort_order>
                             <show_in_default>1</show_in_default>
                             <show_in_website>1</show_in_website>
                             <show_in_store>0</show_in_store>
-                            <comment><![CDATA[Caso sua loja utilize um atributo personalizado para o CPF do cliente, selecione aqui. Caso contrário escolha "Solicitar junto com os outros dados do pagamento".]]></comment>
+                            <comment><![CDATA[Caso sua loja utilize um atributo personalizado para o CPF do cliente, selecione aqui.]]></comment>
                         </customer_cpf_attribute>
                         <address_street_attribute>
                             <label>Atributo Rua de entrega</label>
@@ -221,28 +211,6 @@
                             <show_in_store>0</show_in_store>
                             <frontend_class>validate-number</frontend_class>
                         </sort_order>
-                        <group_restriction>
-                            <label>Habilitar restrição por grupos</label>
-                            <frontend_type>select</frontend_type>
-                            <sort_order>50</sort_order>
-                            <source_model>adminhtml/system_config_source_yesno</source_model>
-                            <show_in_default>1</show_in_default>
-                            <show_in_website>1</show_in_website>
-                            <show_in_store>0</show_in_store>
-                        </group_restriction>
-                        <customer_groups>
-                            <label>Grupos de Cliente</label>
-                            <frontend_type>multiselect</frontend_type>
-                            <source_model>ricardomartins_pagseguro/system_config_source_customer_groups</source_model>
-                            <sort_order>60</sort_order>
-                            <show_in_default>1</show_in_default>
-                            <show_in_website>1</show_in_website>
-                            <show_in_store>1</show_in_store>
-                            <comment><![CDATA[Grupos de clientes que podem usar este método.]]></comment>
-                            <depends>
-                                <group_restriction>1</group_restriction>
-                            </depends>
-                        </customer_groups>
                     </fields>
                 </pagseguro_cc>
             </groups>

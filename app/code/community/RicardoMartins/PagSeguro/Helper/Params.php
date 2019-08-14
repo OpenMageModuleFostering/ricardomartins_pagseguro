@@ -21,7 +21,7 @@ class RicardoMartins_PagSeguro_Helper_Params extends Mage_Core_Helper_Abstract
             for($x=1, $y=0, $c=count($items); $x <= $c; $x++, $y++)
             {
                 $retorno['itemId'.$x] = $items[$y]->getId();
-                $retorno['itemDescription'.$x] = substr($items[$y]->getName(), 0, 100);
+                $retorno['itemDescription'.$x] = $this->normalizeChars($items[$y]->getName());
                 $retorno['itemAmount'.$x] = number_format($items[$y]->getPrice(),2,'.','');
                 $retorno['itemQuantity'.$x] = $items[$y]->getQtyOrdered();
             }
@@ -39,7 +39,10 @@ class RicardoMartins_PagSeguro_Helper_Params extends Mage_Core_Helper_Abstract
     {
         $digits = new Zend_Filter_Digits();
 
-        $cpf = $this->_getCustomerCpfValue($order->getCustomer(),$payment);
+        /** @var Mage_Customer_Model_Customer $customer */
+        $customer = Mage::getModel('customer/customer')->load($order->getCustomerId());
+        $customer_cpf_attribute = Mage::getStoreConfig('payment/pagseguro/customer_cpf_attribute');
+        $cpf = $customer->getResource()->getAttribute($customer_cpf_attribute)->getFrontend()->getValue($customer);
 
         //telefone
         $phone = $this->_extractPhone($order->getBillingAddress()->getTelephone());
@@ -47,7 +50,7 @@ class RicardoMartins_PagSeguro_Helper_Params extends Mage_Core_Helper_Abstract
 
         $retorno = array(
             'senderName'    =>  sprintf('%s %s',trim($order->getCustomerFirstname()), trim($order->getCustomerLastname())),
-            'senderEmail'   => trim($order->getCustomerEmail()),
+            'senderEmail'   => $order->getCustomerEmail(),
             'senderHash'    => $payment['additional_information']['sender_hash'],
             'senderCPF'     => $digits->filter($cpf),
             'senderAreaCode'=> $phone['area'],
@@ -67,11 +70,16 @@ class RicardoMartins_PagSeguro_Helper_Params extends Mage_Core_Helper_Abstract
     {
         $digits = new Zend_Filter_Digits();
 
-        $cpf = $this->_getCustomerCpfValue($order->getCustomer(),$payment);
+        /** @var Mage_Customer_Model_Customer $customer */
+        $customer = Mage::getModel('customer/customer')->load($order->getCustomerId());
+        $customer_cpf_attribute = Mage::getStoreConfig('payment/pagseguro/customer_cpf_attribute');
+        $cpf = $customer->getResource()->getAttribute($customer_cpf_attribute)->getFrontend()->getValue($customer);
 
+
+        $cpf = $customer->getResource()->getAttribute($customer_cpf_attribute)->getFrontend()->getValue($customer);
 
         //dados
-        $creditCardHolderBirthDate = $this->_getCustomerCcDobValue($order->getCustomer(),$payment);
+        $creditCardHolderBirthDate = $this->_getCustomerCcDobValue($customer,$payment);
         $phone = $this->_extractPhone($order->getBillingAddress()->getTelephone());
 
 
@@ -134,18 +142,18 @@ class RicardoMartins_PagSeguro_Helper_Params extends Mage_Core_Helper_Abstract
         $addressNumber = $this->_getAddressAttributeValue($address,$address_number_attribute);
         $addressComplement = $this->_getAddressAttributeValue($address,$address_complement_attribute);
         $addressDistrict = $this->_getAddressAttributeValue($address,$address_neighborhood_attribute);
-        $addressPostalCode = $digits->filter($address->getPostcode());
+        $addressPostalCode = $address->getPostcode();
         $addressCity = $address->getCity();
         $addressState = $this->getStateCode( $address->getRegion() );
 
 
         $retorno = array(
-            $type.'AddressStreet'     => substr($addressStreet,0,80),
-            $type.'AddressNumber'     => substr($addressNumber,0,20),
-            $type.'AddressComplement' => substr($addressComplement,0,40),
-            $type.'AddressDistrict'   => substr($addressDistrict,0,60),
+            $type.'AddressStreet'     => $this->normalizeChars($addressStreet),
+            $type.'AddressNumber'     => $addressNumber,
+            $type.'AddressComplement' => $this->normalizeChars($addressComplement),
+            $type.'AddressDistrict'   => $this->normalizeChars($addressDistrict),
             $type.'AddressPostalCode' => $addressPostalCode,
-            $type.'AddressCity'       => substr($addressCity,0,60),
+            $type.'AddressCity'       => $this->normalizeChars($addressCity),
             $type.'AddressState'      => $addressState,
             $type.'AddressCountry'    => 'BRA',
          );
@@ -158,9 +166,6 @@ class RicardoMartins_PagSeguro_Helper_Params extends Mage_Core_Helper_Abstract
             $retorno['shippingType'] = $shippingType;
             if($shippingCost > 0)
             {
-                if($this->_shouldSplit($order)){
-                    $shippingCost -= 0.01;
-                }
                 $retorno['shippingCost'] = number_format($shippingCost,2,'.','');
             }
         }
@@ -228,9 +233,6 @@ class RicardoMartins_PagSeguro_Helper_Params extends Mage_Core_Helper_Abstract
         $discount = $order->getDiscountAmount();
         $tax_amount = $order->getTaxAmount();
         $extra = $discount+$tax_amount;
-        if($this->_shouldSplit($order)){
-            $extra = $extra+0.01;
-        }
         return number_format($extra,2, '.','');
     }
 
@@ -323,52 +325,5 @@ class RicardoMartins_PagSeguro_Helper_Params extends Mage_Core_Helper_Abstract
 
 
         return date('d/m/Y', strtotime($dob));
-    }
-
-    /**
-     * Retorna o CPF do cliente baseado na selecao realizada na configuração do modulo
-     * @param Mage_Customer_Model_Customer $customer
-     * @param Mage_Payment_Model_Method_Abstract $payment
-     *
-     * @return mixed
-     */
-    private function _getCustomerCpfValue(Mage_Customer_Model_Customer $customer, $payment)
-    {
-        $customer_cpf_attribute = Mage::getStoreConfig('payment/pagseguro/customer_cpf_attribute');
-
-        if(empty($customer_cpf_attribute)) //Soliciado ao cliente junto com os dados do cartao
-        {
-            if(isset($payment['additional_information'][$payment->getMethod().'_cpf'])){
-                return $payment['additional_information'][$payment->getMethod().'_cpf'];
-            }
-        }
-
-        $cpf = $customer->getResource()->getAttribute($customer_cpf_attribute)->getFrontend()->getValue($customer);
-
-        return $cpf;
-    }
-
-
-    /**
-     * Se deve ou não dividir o frete.. Se o total de produtos for igual o
-     * totalde desconto, o modulo diminuirá 1 centavo do frete e adicionará
-     * ao valor dos itens, pois o PagSeguro não aceita que os produtos custem
-     * zero.
-     *
-     * @param $order
-     *
-     * @return bool
-     */
-    private function _shouldSplit($order)
-    {
-        $discount = $order->getDiscountAmount();
-        $tax_amount = $order->getTaxAmount();
-        $extraAmount = $discount+$tax_amount;
-
-        $totalAmount = 0;
-        foreach($order->getAllVisibleItems() as $item){
-            $totalAmount += $item->getRowTotal();
-        }
-        return (abs($extraAmount) == $totalAmount);
     }
 }
