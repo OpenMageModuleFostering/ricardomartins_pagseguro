@@ -9,9 +9,7 @@
  * @copyright   Copyright (c) 2015 Ricardo Martins (http://r-martins.github.io/PagSeguro-Magento-Transparente/)
  * @license     https://opensource.org/licenses/MIT MIT License
  */
-class RicardoMartins_PagSeguro_Model_Payment_Cc
-    extends RicardoMartins_PagSeguro_Model_Abstract
-    implements Mage_Payment_Model_Recurring_Profile_MethodInterface
+class RicardoMartins_PagSeguro_Model_Payment_Cc extends RicardoMartins_PagSeguro_Model_Abstract
 {
     protected $_code = 'rm_pagseguro_cc';
     protected $_formBlockType = 'ricardomartins_pagseguro/form_cc';
@@ -26,7 +24,6 @@ class RicardoMartins_PagSeguro_Model_Payment_Cc
     protected $_canUseCheckout = true;
     protected $_canUseForMultishipping = true;
     protected $_canSaveCc = false;
-    protected $_canManageRecurringProfiles = true;
 
     /**
      * Check if module is available for current quote and customer group (if restriction is activated)
@@ -214,22 +211,4 @@ class RicardoMartins_PagSeguro_Model_Payment_Cc
         return Mage::getStoreConfig("payment/pagseguro_cc/{$field}");
     }
 
-    public function validateRecurringProfile(Mage_Payment_Model_Recurring_Profile $profile)
-    {
-    }
-
-    public function submitRecurringProfile(Mage_Payment_Model_Recurring_Profile $profile, Mage_Payment_Model_Info $paymentInfo)
-    {
-    }
-
-    public function getRecurringProfileDetails($referenceId, Varien_Object $result)
-    {
-    }
-
-    public function canGetRecurringProfileDetails()
-    {
-        return true;
-    }
-    public function updateRecurringProfile(Mage_Payment_Model_Recurring_Profile $profile) {}
-    public function updateRecurringProfileStatus(Mage_Payment_Model_Recurring_Profile $profile){}
 }
