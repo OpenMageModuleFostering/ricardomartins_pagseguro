@@ -108,10 +108,12 @@ class RicardoMartins_PagSeguro_Helper_Params extends Mage_Core_Helper_Abstract
         $return = array();
         if ($payment->getAdditionalInformation('installment_quantity')
             && $payment->getAdditionalInformation('installment_value')) {
+            $orderTotal = $order->getGrandTotal();
+            $installmentQty = $payment->getAdditionalInformation('installment_quantity');
             $return = array(
-                'installmentQuantity'   => $payment->getAdditionalInformation('installment_quantity'),
+                'installmentQuantity'   => $installmentQty,
                 'installmentValue'      => number_format(
-                    $payment->getAdditionalInformation('installment_value'), 2, '.', ''
+                    $orderTotal/$installmentQty, 2, '.', ''
                 ),
             );
         } else {
