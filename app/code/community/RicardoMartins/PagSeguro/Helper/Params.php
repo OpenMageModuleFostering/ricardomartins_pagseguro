@@ -39,10 +39,7 @@ class RicardoMartins_PagSeguro_Helper_Params extends Mage_Core_Helper_Abstract
     {
         $digits = new Zend_Filter_Digits();
 
-        /** @var Mage_Customer_Model_Customer $customer */
-        $customer = Mage::getModel('customer/customer')->load($order->getCustomerId());
-        $customer_cpf_attribute = Mage::getStoreConfig('payment/pagseguro/customer_cpf_attribute');
-        $cpf = $customer->getResource()->getAttribute($customer_cpf_attribute)->getFrontend()->getValue($customer);
+        $cpf = $this->_getCustomerCpfValue($order->getCustomer(),$payment);
 
         //telefone
         $phone = $this->_extractPhone($order->getBillingAddress()->getTelephone());
@@ -70,16 +67,11 @@ class RicardoMartins_PagSeguro_Helper_Params extends Mage_Core_Helper_Abstract
     {
         $digits = new Zend_Filter_Digits();
 
-        /** @var Mage_Customer_Model_Customer $customer */
-        $customer = Mage::getModel('customer/customer')->load($order->getCustomerId());
-        $customer_cpf_attribute = Mage::getStoreConfig('payment/pagseguro/customer_cpf_attribute');
-        $cpf = $customer->getResource()->getAttribute($customer_cpf_attribute)->getFrontend()->getValue($customer);
+        $cpf = $this->_getCustomerCpfValue($order->getCustomer(),$payment);
 
-
-        $cpf = $customer->getResource()->getAttribute($customer_cpf_attribute)->getFrontend()->getValue($customer);
 
         //dados
-        $creditCardHolderBirthDate = $this->_getCustomerCcDobValue($customer,$payment);
+        $creditCardHolderBirthDate = $this->_getCustomerCcDobValue($order->getCustomer(),$payment);
         $phone = $this->_extractPhone($order->getBillingAddress()->getTelephone());
 
 
@@ -142,7 +134,7 @@ class RicardoMartins_PagSeguro_Helper_Params extends Mage_Core_Helper_Abstract
         $addressNumber = $this->_getAddressAttributeValue($address,$address_number_attribute);
         $addressComplement = $this->_getAddressAttributeValue($address,$address_complement_attribute);
         $addressDistrict = $this->_getAddressAttributeValue($address,$address_neighborhood_attribute);
-        $addressPostalCode = $address->getPostcode();
+        $addressPostalCode = $digits->filter($address->getPostcode());
         $addressCity = $address->getCity();
         $addressState = $this->getStateCode( $address->getRegion() );
 
@@ -326,4 +318,28 @@ class RicardoMartins_PagSeguro_Helper_Params extends Mage_Core_Helper_Abstract
 
         return date('d/m/Y', strtotime($dob));
     }
+
+    /**
+     * Retorna o CPF do cliente baseado na selecao realizada na configuração do modulo
+     * @param Mage_Customer_Model_Customer $customer
+     * @param Mage_Payment_Model_Method_Abstract $payment
+     *
+     * @return mixed
+     */
+    private function _getCustomerCpfValue(Mage_Customer_Model_Customer $customer, $payment)
+    {
+        $customer_cpf_attribute = Mage::getStoreConfig('payment/pagseguro/customer_cpf_attribute');
+
+        if(empty($customer_cpf_attribute)) //Soliciado ao cliente junto com os dados do cartao
+        {
+            if(isset($payment['additional_information'][$payment->getMethod().'_cpf'])){
+                return $payment['additional_information'][$payment->getMethod().'_cpf'];
+            }
+        }
+
+        $cpf = $customer->getResource()->getAttribute($customer_cpf_attribute)->getFrontend()->getValue($customer);
+
+        return $cpf;
+    }
+
 }
