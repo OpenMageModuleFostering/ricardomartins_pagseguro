@@ -1,16 +1,19 @@
 {
-    "name": "OpenMageModuleFostering/RicardoMartins_PagSeguro",
+    "name": "OpenMageModuleFostering\/RicardoMartins_PagSeguro",
     "type": "magento-module",
     "license": "MIT",
     "homepage": "",
-    "description": "PagSeguro transparente (cartões)",
+    "description": "PagSeguro transparente (cart\u00f5es)",
     "authors": [
-    {
-        "name": "Ricardo Martins",
-        "email": "ricardo@ricardomartins.info"
-    }
-],
+        {
+            "name": "Ricardo Martins",
+            "email": "ricardo@ricardomartins.info"
+        }
+    ],
     "suggest": {
-        "magento-hackathon/magento-composer-installer": "*"
-    }
+        "magento-hackathon\/magento-composer-installer": "*"
+    },
+    "keywords": [
+        "openmage-module"
+    ]
 }
